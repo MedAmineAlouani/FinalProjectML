@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+_hits_cache.pkl
+*.log
+.ipynb_checkpoints/
