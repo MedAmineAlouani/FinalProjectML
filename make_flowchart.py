@@ -56,7 +56,7 @@ arrow(1.9, 5.0, 2.4, 5.0, COLOR_SHARED)
 # === Branch labels (centered above each row's first box, far from arrow lines) ===
 ax.text(5.45, 6.05, "Tuned RF", ha="center", fontsize=11, fontweight="bold", color=COLOR_RF)
 ax.text(5.45, 4.25, "Flange-Invariant LR", ha="center", fontsize=11, fontweight="bold", color=COLOR_LR)
-ax.text(5.55, 1.85, "CRNN (Conv2D + Bi-GRU)", ha="center", fontsize=11, fontweight="bold", color=COLOR_CRNN)
+ax.text(5.55, 1.85, "CRNN", ha="center", fontsize=11, fontweight="bold", color=COLOR_CRNN)
 
 # Top branch: RF
 box(4.5, 5.1, 1.9, 0.7, "150-dim\nHybrid Features", COLOR_RF, fontsize=9)
@@ -128,9 +128,7 @@ ax.plot([12.3, MERGE_X], [1.25, 1.25], color=COLOR_CRNN, linewidth=1.7, solid_ca
 ax.plot([MERGE_X, MERGE_X], [1.25, 3.45], color=COLOR_CRNN, linewidth=1.7, solid_capstyle="round")
 arrow(MERGE_X, 3.45, 12.7, 3.45, COLOR_CRNN)
 
-# Final output below soft-vote
-box(12.5, 1.6, 1.5, 0.7, "Final Torque\nprediction", "#2C3E50", fontsize=10)
-arrow(13.25, 3.0, 13.25, 2.3, "#2C3E50")
+# (Final Torque prediction box rendered as a separate figure)
 
 # === Innovations legend ===
 legend_y = 0.05
