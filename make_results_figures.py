@@ -299,16 +299,60 @@ plt.tight_layout()
 plt.savefig(f"{OUTDIR}/fig_crnn_loss_curve.png", bbox_inches="tight")
 plt.close()
 
+# === CRNN LOAO eval (4 folds, ~3 min each) ===
+print("\nCRNN LOAO eval (4 folds) ...")
+mean_all = X_lm.mean(axis=0, keepdims=True)
+crnn_loao_accs = []
+for held_area in [1, 2, 3, 4]:
+    tr = ar != held_area; te = ar == held_area
+    # Standardize using training portion only
+    m_loao = X_lm[tr].mean(axis=0, keepdims=True)
+    s_loao = X_lm[tr].std(axis=0, keepdims=True) + 1e-6
+    Xtr_n = (X_lm[tr] - m_loao) / s_loao
+    Xte_n = (X_lm[te] - m_loao) / s_loao
+    # inner val split + augmentation
+    rng_l = np.random.RandomState(RANDOM_STATE + held_area)
+    inner = rng_l.permutation(len(Xtr_n))
+    nv = int(len(inner) * 0.15)
+    val_i, trn_i = inner[:nv], inner[nv:]
+    X_aug2 = np.stack([spec_augment(x.copy()) for x in Xtr_n[trn_i]])
+    X_train_loao = np.concatenate([Xtr_n[trn_i], X_aug2], axis=0)
+    y_train_loao = to_categorical(np.array([LABEL_TO_INDEX[v] for v in y[tr][trn_i]]),
+                                    num_classes=N_CLASSES)
+    y_train_loao = np.concatenate([y_train_loao, y_train_loao], axis=0)
+    X_val_loao = Xtr_n[val_i]
+    y_val_loao = to_categorical(np.array([LABEL_TO_INDEX[v] for v in y[tr][val_i]]),
+                                  num_classes=N_CLASSES)
+    tf.keras.utils.set_random_seed(RANDOM_STATE + held_area)
+    m_crnn = make_crnn(X_train_loao.shape[1:])
+    cb = [EarlyStopping(monitor="val_accuracy", patience=15, restore_best_weights=True),
+          ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=6, min_lr=1e-5)]
+    t1 = time.time()
+    m_crnn.fit(X_train_loao, y_train_loao, validation_data=(X_val_loao, y_val_loao),
+                epochs=35, batch_size=32, verbose=0, callbacks=cb)
+    P = m_crnn.predict(Xte_n, verbose=0)
+    P3 = P[:, [LABEL_TO_INDEX[c] for c in classes_ref]]
+    df = pd.DataFrame(P3, columns=classes_ref); df["__f__"] = files[te]
+    avg = df.groupby("__f__").mean().sort_index()
+    pred_file = classes_ref[avg.values.argmax(axis=1)]
+    true_file = (pd.DataFrame({"f": files[te], "y": y[te]})
+                   .groupby("f")["y"].first().loc[avg.index.values].values)
+    a = accuracy_score(true_file, pred_file)
+    crnn_loao_accs.append(a)
+    print(f"  Area {held_area} held-out: file-level {a*100:.2f}%  ({time.time()-t1:.1f}s)")
+crnn_loao_mean = float(np.mean(crnn_loao_accs))
+print(f"  CRNN LOAO mean: {crnn_loao_mean*100:.2f}%")
+
 # === Summary: comparative model table ===
 LOFO = {"Tuned RF": 89.58, "Flange-Invariant LR": 85.42, "CRNN": 77.08}
-LOAO = {"Tuned RF": 83.33, "Flange-Invariant LR": 87.50, "CRNN": np.nan}  # CRNN LOAO not measured
+LOAO = {"Tuned RF": 83.33, "Flange-Invariant LR": 87.50, "CRNN": crnn_loao_mean * 100}
 DEP  = {"Tuned RF": acc_rf_dep*100, "Flange-Invariant LR": acc_lr_dep*100, "CRNN": acc_crnn_dep*100}
 
 comp = pd.DataFrame({
     "Model": list(LOFO.keys()),
-    "Dependent Test\n(70/30 hit-level)": [f"{DEP[m]:.2f}%" for m in LOFO],
-    "Independent Test (LOFO)\n(file-level)":   [f"{LOFO[m]:.2f}%" for m in LOFO],
-    "Same-flange new-session (LOAO)\n(file-level)": [f"{LOAO[m]:.2f}%" if not np.isnan(LOAO[m]) else "n/a" for m in LOFO],
+    "Dependent Test":  [f"{DEP[m]:.2f}%"  for m in LOFO],
+    "Independent Test (LOFO)": [f"{LOFO[m]:.2f}%" for m in LOFO],
+    "Same-flange new-session (LOAO)": [f"{LOAO[m]:.2f}%" for m in LOFO],
 }).set_index("Model")
 print("\n" + comp.to_string())
 
