@@ -15,7 +15,7 @@ print(f"Loading {NB}")
 nb = nbformat.read(NB, as_version=4)
 print(f"  {len(nb.cells)} cells")
 
-client = NotebookClient(nb, timeout=1800, kernel_name="python3", allow_errors=False)
+client = NotebookClient(nb, timeout=3600, kernel_name="python3", allow_errors=False)
 client.create_kernel_manager()
 client.start_new_kernel()
 client.start_new_kernel_client()
