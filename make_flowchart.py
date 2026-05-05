@@ -53,10 +53,10 @@ box(0.3, 4.6, 1.6, 0.8, "Raw Audio\n(48 kHz)", COLOR_SHARED)
 box(2.4, 4.6, 1.6, 0.8, "Peak\nSegmentation\n(~20 hits/file)", COLOR_SHARED)
 arrow(1.9, 5.0, 2.4, 5.0, COLOR_SHARED)
 
-# === Branch labels (well above the box rows so they don't collide) ===
-ax.text(4.3, 5.95, "Tuned RF", ha="left", fontsize=11, fontweight="bold", color=COLOR_RF)
-ax.text(4.3, 4.15, "Flange-Invariant LR", ha="left", fontsize=11, fontweight="bold", color=COLOR_LR)
-ax.text(4.3, 1.75, "CRNN (Conv2D + Bi-GRU)", ha="left", fontsize=11, fontweight="bold", color=COLOR_CRNN)
+# === Branch labels (centered above each row's first box, far from arrow lines) ===
+ax.text(5.45, 6.05, "Tuned RF", ha="center", fontsize=11, fontweight="bold", color=COLOR_RF)
+ax.text(5.45, 4.25, "Flange-Invariant LR", ha="center", fontsize=11, fontweight="bold", color=COLOR_LR)
+ax.text(5.55, 1.85, "CRNN (Conv2D + Bi-GRU)", ha="center", fontsize=11, fontweight="bold", color=COLOR_CRNN)
 
 # Top branch: RF
 box(4.5, 5.1, 1.9, 0.7, "150-dim\nHybrid Features", COLOR_RF, fontsize=9)
@@ -80,10 +80,16 @@ box(6.8, 0.9, 1.9, 0.7, "Conv2D\n(freq-only pool)", COLOR_CRNN, fontsize=9)
 box(8.9, 0.9, 1.6, 0.7, "Bi-GRU\nstack", COLOR_CRNN, fontsize=9)
 box(10.7, 0.9, 1.6, 0.7, "Dense\nhead", COLOR_CRNN, fontsize=9)
 
-# Branching arrows from "Peak Segmentation"
-arrow(4.0, 5.0, 4.5, 5.45, "#444")
-arrow(4.0, 5.0, 4.5, 3.65, "#444")
-arrow(4.0, 5.0, 4.5, 1.25, "#444")
+# Orthogonal branching from "Peak Segmentation": short stem -> vertical bar -> 3 horizontal arrows
+JUNCTION_X = 4.3
+# Stem (no arrowhead): from Peak Seg right edge to the junction column
+ax.plot([4.0, JUNCTION_X], [5.0, 5.0], color="#444", linewidth=1.7, solid_capstyle="round")
+# Vertical fork bar covering all three row y-positions
+ax.plot([JUNCTION_X, JUNCTION_X], [1.25, 5.45], color="#444", linewidth=1.7, solid_capstyle="round")
+# Three horizontal arrows from the junction to each row's first feature box
+arrow(JUNCTION_X, 5.45, 4.5, 5.45, "#444")
+arrow(JUNCTION_X, 3.65, 4.5, 3.65, "#444")
+arrow(JUNCTION_X, 1.25, 4.5, 1.25, "#444")
 
 # Within-branch arrows
 # RF
@@ -106,10 +112,21 @@ ax.text(11.85, 1.75, "P[0,25,50]", ha="center", fontsize=8, color=COLOR_CRNN, st
 # Soft-vote box
 box(12.7, 3.0, 1.1, 1.4, "Soft-vote\nper flange\n+\nArgmax", COLOR_OUTPUT, fontsize=9)
 
-# Arrows from each branch end into soft-vote
-arrow(8.7, 5.45, 12.85, 4.4, COLOR_RF)
+# Orthogonal feed-in arrows: each branch's last box -> right edge -> vertical merge column -> Soft-vote
+MERGE_X = 12.5
+
+# Top branch (RF): last box right edge at (8.7, 5.45). Run right then down.
+ax.plot([8.7, MERGE_X], [5.45, 5.45], color=COLOR_RF, linewidth=1.7, solid_capstyle="round")
+ax.plot([MERGE_X, MERGE_X], [5.45, 3.85], color=COLOR_RF, linewidth=1.7, solid_capstyle="round")
+arrow(MERGE_X, 3.85, 12.7, 3.85, COLOR_RF)
+
+# Middle branch (LR): straight horizontal arrow into Soft-vote
 arrow(12.3, 3.65, 12.7, 3.65, COLOR_LR)
-arrow(12.3, 1.25, 12.85, 3.0, COLOR_CRNN)
+
+# Bottom branch (CRNN): last box right edge at (12.3, 1.25). Run up to Soft-vote bottom.
+ax.plot([12.3, MERGE_X], [1.25, 1.25], color=COLOR_CRNN, linewidth=1.7, solid_capstyle="round")
+ax.plot([MERGE_X, MERGE_X], [1.25, 3.45], color=COLOR_CRNN, linewidth=1.7, solid_capstyle="round")
+arrow(MERGE_X, 3.45, 12.7, 3.45, COLOR_CRNN)
 
 # Final output below soft-vote
 box(12.5, 1.6, 1.5, 0.7, "Final Torque\nprediction", "#2C3E50", fontsize=10)
