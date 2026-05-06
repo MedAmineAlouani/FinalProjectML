@@ -989,7 +989,7 @@ with tab_about:
     p_flanges  = ROOT / "flanges.png"
     p_close    = ROOT / "IMG_1976.jpg"
     p_lab      = ROOT / "IMG_1979.jpg"
-    p_torque   = ROOT / "IMG_1984.jpg"
+    p_strike   = ROOT / "IMG_1984.jpg"
 
     # Top row: the three "what" photos
     col_a, col_b, col_c = st.columns([1, 1, 1.2])
@@ -1014,10 +1014,10 @@ with tab_about:
                            "Lab setup: the steel pipeline mounted on stands, "
                            "instrumented for percussion measurements.")
     with col_e:
-        if p_torque.exists():
-            _stretch_image(str(p_torque),
-                           "Setting bolt preload with a torque wrench before each session "
-                           "(0, 25, or 50 ft-lbs).")
+        if p_strike.exists():
+            _stretch_image(str(p_strike),
+                           "Hammer strike on a flange area — this is the percussion event "
+                           "the model listens to.")
 
     # ---- Confusion matrices
     if md.get("confusion_matrices"):
