@@ -192,6 +192,40 @@ def main() -> None:
     cal_pred = CLASSES_REF[cal.argmax(axis=1)]
     print(f"[train] LOFO calibrated hit-level accuracy: {(cal_pred == y).mean() * 100:.2f}%")
 
+    # ----- Confusion matrices + per-class metrics -----
+    def confusion(y_true, y_pred):
+        m = np.zeros((len(CLASSES_REF), len(CLASSES_REF)), dtype=int)
+        for ti, t in enumerate(CLASSES_REF):
+            for pi, p in enumerate(CLASSES_REF):
+                m[ti, pi] = int(((y_true == t) & (y_pred == p)).sum())
+        return m
+
+    cm_raw = confusion(y, raw_pred)
+    cm_cal = confusion(y, cal_pred)
+
+    # File-level (soft-vote) accuracy from LOFO OOF
+    files_arr = np.array([h["file_name"] for h in hits])
+    file_pred_rows = []
+    file_true_rows = []
+    for fname in np.unique(files_arr):
+        mask = files_arr == fname
+        avg = cal[mask].mean(axis=0)
+        file_pred_rows.append(int(CLASSES_REF[int(np.argmax(avg))]))
+        file_true_rows.append(int(y[mask][0]))
+    file_pred = np.array(file_pred_rows)
+    file_true = np.array(file_true_rows)
+    cm_file = confusion(file_true, file_pred)
+    file_acc = float((file_pred == file_true).mean())
+
+    def per_class_recall(cm):
+        rec = {}
+        for ci, c in enumerate(CLASSES_REF):
+            denom = cm[ci, :].sum()
+            rec[int(c)] = float(cm[ci, ci] / denom) if denom > 0 else 0.0
+        return rec
+
+    print(f"[train] LOFO file-level accuracy (soft-vote): {file_acc * 100:.2f}%")
+
     print(f"[train] Writing artifacts to {out_dir} ...")
     with open(out_dir / "flange_invariant_lr.pkl", "wb") as f:
         pickle.dump(model, f)
@@ -212,6 +246,7 @@ def main() -> None:
         "n_training_files": int(len(files)),
         "lofo_raw_hit_accuracy": float((raw_pred == y).mean()),
         "lofo_calibrated_hit_accuracy": float((cal_pred == y).mean()),
+        "lofo_file_accuracy_softvote": file_acc,
         "in_sample_hit_accuracy": float(train_acc),
         "feature_extraction": {
             "n_mfcc": 13, "n_fft": 512, "hop_length": 128, "n_psd_bins": 64,
@@ -220,6 +255,22 @@ def main() -> None:
             "ignore_start_sec": 0.15, "envelope_win_sec": 0.01,
             "min_peak_distance_sec": 0.30, "peak_height_factor": 2.5,
             "pre_hit_sec": 0.02, "post_hit_sec": 0.15,
+        },
+        "confusion_matrices": {
+            "labels": [int(c) for c in CLASSES_REF],
+            "hit_level_raw":        cm_raw.tolist(),
+            "hit_level_calibrated": cm_cal.tolist(),
+            "file_level":           cm_file.tolist(),
+        },
+        "per_class_recall": {
+            "hit_level_raw":        per_class_recall(cm_raw),
+            "hit_level_calibrated": per_class_recall(cm_cal),
+            "file_level":           per_class_recall(cm_file),
+        },
+        "n_lofo_files": int(len(file_pred)),
+        "training_data": {
+            "hits_per_class": {int(c): int((y == c).sum()) for c in CLASSES_REF},
+            "hits_per_flange": {int(f): int((fl == f).sum()) for f in np.unique(fl)},
         },
     }
     with open(out_dir / "metadata.json", "w") as f:

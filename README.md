@@ -12,6 +12,21 @@ re-implementation of that pipeline; no other model is used.
 
 ---
 
+## What's in the UI
+
+The Streamlit app has three tabs:
+
+* **Predict** — flange selector, live mic / file upload, big confidence-coloured
+  badge, averaged probability bars, waveform with detected hit markers, and a
+  per-hit gallery of mini probability cards.
+* **Features** — once you've predicted, this tab shows a 150-D z-score heatmap
+  with feature-group boundaries, a stacked "where each hit's signal lives" bar
+  chart, mel-spectrograms per hit, and a searchable raw-feature table.
+* **About** — method writeup, photos of the experimental setup (the steel
+  pipeline, the four flanges, the per-flange hammer-strike areas), LOFO
+  confusion matrices (hit-level calibrated and file-level soft-vote),
+  per-class recall comparison, and training-data composition charts.
+
 ## Pipeline
 
 ```
@@ -221,6 +236,7 @@ streamlit_app.py          Streamlit UI (deploy this to Streamlit Cloud)
 requirements.txt          Root deps for Streamlit Cloud (streamlit + libs)
 packages.txt              apt packages for Streamlit Cloud (ffmpeg)
 .streamlit/config.toml    Dark theme defaults
+assets/                   Photos of the experimental setup (used in About tab)
 
 backend/
   app.py                  FastAPI server + static-file serving (Option B)

@@ -147,9 +147,11 @@ class FlangeInvariantLR:
             )
 
         # ------------------------- Build response ---------------------- #
+        feature_groups = _feature_group_layout()  # name -> (start, length)
         per_hit = []
         for i, (hit_signal, hit_proba) in enumerate(zip(hits, per_hit_proba)):
             cls_idx = int(np.argmax(hit_proba))
+            mel_db = _mel_spectrogram_db(hit_signal, sr)
             per_hit.append({
                 "hit_id": i + 1,
                 "time_sec": peak_times_sec[i] if i < len(peak_times_sec) else None,
@@ -160,6 +162,13 @@ class FlangeInvariantLR:
                 },
                 "predicted_torque": int(CLASSES_REF[cls_idx]),
                 "confidence": float(hit_proba[cls_idx]),
+                # Full 150-D feature vector for this hit
+                "features_full": [float(v) for v in X[i]],
+                # Group sums of |z-score| over each feature category, useful as
+                # a quick glance "where did this prediction's signal come from"
+                "feature_group_energy": _group_energy(X[i], feature_groups),
+                # Mel spectrogram (dB) for the Features tab
+                "mel_spectrogram": mel_db,
             })
 
         return {
@@ -183,6 +192,8 @@ class FlangeInvariantLR:
                 "confidence_level": _confidence_level(final_confidence),
             },
             "warnings": warnings,
+            "feature_groups": feature_groups,
+            "selected_feature_indices": [int(i) for i in self.keep_idx.tolist()],
             "model_metadata": {
                 "name": self.metadata.get("model"),
                 "lofo_calibrated_hit_accuracy": self.metadata.get("lofo_calibrated_hit_accuracy"),
@@ -253,4 +264,71 @@ def _downsample_for_plot(arr: np.ndarray, target: int = 2000, offset_sec: float 
         "offset_sec": float(offset_sec),
         "length": n,
         "bucket_size": int(bucket),
+    }
+
+
+def _feature_group_layout() -> dict:
+    """
+    Map each feature group to (start, length) in the 150-D vector.
+
+    Mirrors extract_hybrid_features():
+        Welch log-PSD                      -> 64
+        MFCC mean+std + delta MFCC m+std   -> 52
+        Spectral summary (6 stats * 2)     -> 12
+        Frequency shape (dom freq, entropy)->  2
+        Global decay                       ->  5
+        Per-band T60-style decay (5 * 3)   -> 15
+    """
+    return {
+        "PSD (Welch log)":   {"start": 0,   "length": 64,
+                              "blurb": "Power spectral density across 64 log-bins."},
+        "MFCC + delta":      {"start": 64,  "length": 52,
+                              "blurb": "13 MFCCs and their deltas, mean+std each."},
+        "Spectral stats":    {"start": 116, "length": 12,
+                              "blurb": "Centroid · bandwidth · rolloff · flatness · ZCR · RMS."},
+        "Frequency shape":   {"start": 128, "length": 2,
+                              "blurb": "Dominant frequency, spectral entropy."},
+        "Global decay":      {"start": 130, "length": 5,
+                              "blurb": "Peak, peak time, 50%/10% decay, log-slope."},
+        "Per-band T60":      {"start": 135, "length": 15,
+                              "blurb": "Per-band ring-down: slope · half-life · peak-to-mean."},
+    }
+
+
+def _group_energy(feat_vec: np.ndarray, groups: dict) -> dict:
+    """Sum of |z| within each feature group, normalised by group length, so we
+    can render a single-glance bar chart of 'where this hit's signal lives'."""
+    feat_vec = np.asarray(feat_vec, dtype=float)
+    # z = (x - x.mean()) / (x.std() + eps) over the whole 150-D vector
+    z = (feat_vec - feat_vec.mean()) / (feat_vec.std() + 1e-9)
+    out = {}
+    for name, g in groups.items():
+        s, n = g["start"], g["length"]
+        out[name] = float(np.abs(z[s:s + n]).mean())
+    return out
+
+
+def _mel_spectrogram_db(signal: np.ndarray, sr: int, n_mels: int = 32) -> dict:
+    """Return a small mel spectrogram (in dB) suitable for client-side rendering.
+    Output is intentionally small — n_mels x ~32 frames — to keep payload light."""
+    n = len(signal)
+    if n < 32:
+        return {"values": [], "n_mels": n_mels, "n_frames": 0,
+                "fmin": 0.0, "fmax": float(sr / 2)}
+    n_fft = min(512, n)
+    hop = max(1, n // 32)
+    S = librosa.feature.melspectrogram(
+        y=signal.astype(np.float32), sr=sr, n_mels=n_mels,
+        n_fft=n_fft, hop_length=hop, fmin=20.0, fmax=min(20000, sr / 2),
+        power=2.0,
+    )
+    S_db = librosa.power_to_db(S, ref=np.max)
+    # Round to int8-ish precision to keep the payload tiny but plot-quality.
+    S_db = np.clip(S_db, -80.0, 0.0)
+    return {
+        "values": [[float(v) for v in row] for row in S_db],
+        "n_mels": int(S_db.shape[0]),
+        "n_frames": int(S_db.shape[1]),
+        "fmin": 20.0,
+        "fmax": float(min(20000, sr / 2)),
     }

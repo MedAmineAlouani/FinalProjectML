@@ -17,6 +17,7 @@
   "n_training_files": 48,
   "lofo_raw_hit_accuracy": 0.8348530901722391,
   "lofo_calibrated_hit_accuracy": 0.8419452887537994,
+  "lofo_file_accuracy_softvote": 0.8541666666666666,
   "in_sample_hit_accuracy": 1.0,
   "feature_extraction": {
     "n_mfcc": 13,
@@ -31,5 +32,94 @@
     "peak_height_factor": 2.5,
     "pre_hit_sec": 0.02,
     "post_hit_sec": 0.15
+  },
+  "confusion_matrices": {
+    "labels": [
+      0,
+      25,
+      50
+    ],
+    "hit_level_raw": [
+      [
+        309,
+        19,
+        0
+      ],
+      [
+        20,
+        230,
+        78
+      ],
+      [
+        0,
+        46,
+        285
+      ]
+    ],
+    "hit_level_calibrated": [
+      [
+        309,
+        19,
+        0
+      ],
+      [
+        19,
+        244,
+        65
+      ],
+      [
+        0,
+        53,
+        278
+      ]
+    ],
+    "file_level": [
+      [
+        15,
+        1,
+        0
+      ],
+      [
+        1,
+        12,
+        3
+      ],
+      [
+        0,
+        2,
+        14
+      ]
+    ]
+  },
+  "per_class_recall": {
+    "hit_level_raw": {
+      "0": 0.9420731707317073,
+      "25": 0.7012195121951219,
+      "50": 0.8610271903323263
+    },
+    "hit_level_calibrated": {
+      "0": 0.9420731707317073,
+      "25": 0.7439024390243902,
+      "50": 0.8398791540785498
+    },
+    "file_level": {
+      "0": 0.9375,
+      "25": 0.75,
+      "50": 0.875
+    }
+  },
+  "n_lofo_files": 48,
+  "training_data": {
+    "hits_per_class": {
+      "0": 328,
+      "25": 328,
+      "50": 331
+    },
+    "hits_per_flange": {
+      "1": 246,
+      "2": 243,
+      "3": 251,
+      "4": 247
+    }
   }
 }
