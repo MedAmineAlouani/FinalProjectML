@@ -10,7 +10,9 @@ Run locally:
 """
 from __future__ import annotations
 
+import re
 import sys
+import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -260,6 +262,23 @@ def load_model() -> FlangeInvariantLR | None:
         return None
 
 
+def _flatten_html(s: str) -> str:
+    """Strip per-line indentation and blank lines so the HTML never trips
+    Streamlit's markdown parser into treating indented chunks as code blocks."""
+    s = textwrap.dedent(s)
+    return "\n".join(line.lstrip() for line in s.splitlines() if line.strip())
+
+
+def _render_html(html: str) -> None:
+    """Render a block of raw HTML reliably. Prefers st.html (bypasses markdown);
+    falls back to st.markdown(unsafe_allow_html=True) on older Streamlit."""
+    cleaned = _flatten_html(html)
+    if hasattr(st, "html"):
+        st.html(cleaned)
+    else:
+        st.markdown(cleaned, unsafe_allow_html=True)
+
+
 def confidence_class(level: str) -> str:
     return level if level in ("high", "medium", "low") else "medium"
 
@@ -271,7 +290,7 @@ def render_warnings(warnings: list[str]) -> None:
         f'<div class="warning"><span style="font-weight:700;">!</span><span>{w}</span></div>'
         for w in warnings
     )
-    st.markdown(html, unsafe_allow_html=True)
+    _render_html(html)
 
 
 def build_main_waveform_figure(j: dict) -> go.Figure:
@@ -391,7 +410,7 @@ def render_hit_card(hit: dict) -> str:
 # ---------------------------------------------------------------- #
 # Header / hero
 # ---------------------------------------------------------------- #
-st.markdown("""
+_render_html("""
 <div class="ribbon">
     <span style="display:inline-block; width:8px; height:8px; border-radius:9999px; background:#22d3ee;"></span>
     UH Machine Learning Competition 2026 · Bolted-Flange Looseness Detection
@@ -420,7 +439,6 @@ st.markdown("""
     <span class="pipe-arrow">&rarr;</span>
     <span class="pipe-pill final">Torque Prediction</span>
 </div>
-
 <div class="stage-grid">
     <div class="stage"><div class="stage-num">1</div>
         <div><div class="stage-title">Record</div>
@@ -435,7 +453,7 @@ st.markdown("""
         <div><div class="stage-title">Predict</div>
         <div class="stage-sub">Flange-Invariant LR + soft-vote across hits.</div></div></div>
 </div>
-""", unsafe_allow_html=True)
+""")
 
 st.write("")  # small spacer
 
@@ -444,20 +462,20 @@ st.write("")  # small spacer
 # ---------------------------------------------------------------- #
 model = load_model()
 if model is None:
-    st.markdown("""
+    _render_html("""
     <div class="warning">
         <span style="font-weight:700;">!</span>
         <span>Model artifacts could not be loaded. Run
         <code>python backend/train_and_export.py</code> to regenerate them.</span>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 else:
     acc = model.metadata.get("lofo_calibrated_hit_accuracy")
     pill = (
         f'<span class="pill green">model ready'
         f'{f" · LOFO {acc * 100:.1f}%" if acc is not None else ""}</span>'
     )
-    st.markdown(pill, unsafe_allow_html=True)
+    _render_html(pill)
 
 # ---------------------------------------------------------------- #
 # Main two-column layout
@@ -466,9 +484,8 @@ left, right = st.columns([1, 2], gap="large")
 
 with left:
     # Flange selector
-    st.markdown('<div class="label">Flange ID</div>'
-                '<div class="label-sub">Required for per-flange centering</div>',
-                unsafe_allow_html=True)
+    _render_html('<div class="label">Flange ID</div>'
+                 '<div class="label-sub">Required for per-flange centering</div>')
     flange_id = st.radio(
         "flange",
         options=[1, 2, 3, 4],
@@ -479,9 +496,8 @@ with left:
 
     st.write("")
     # Live recording (Streamlit's built-in mic widget)
-    st.markdown('<div class="label">Live Recording</div>'
-                '<div class="label-sub">Strike the flange 3–6 times, then stop.</div>',
-                unsafe_allow_html=True)
+    _render_html('<div class="label">Live Recording</div>'
+                 '<div class="label-sub">Strike the flange 3–6 times, then stop.</div>')
     if hasattr(st, "audio_input"):
         recorded = st.audio_input("Record hammer hits", label_visibility="collapsed")
     else:
@@ -490,9 +506,8 @@ with left:
 
     st.write("")
     # File upload
-    st.markdown('<div class="label">Or Upload Audio</div>'
-                '<div class="label-sub">.m4a · .wav · .mp3 · .webm · .ogg</div>',
-                unsafe_allow_html=True)
+    _render_html('<div class="label">Or Upload Audio</div>'
+                 '<div class="label-sub">.m4a · .wav · .mp3 · .webm · .ogg</div>')
     uploaded = st.file_uploader(
         "audio",
         type=["m4a", "wav", "mp3", "webm", "ogg", "flac"],
@@ -524,7 +539,7 @@ with left:
     )
 
     # Why flange-invariant
-    st.markdown("""
+    _render_html("""
     <div class="glass" style="margin-top:1.2rem;">
         <div class="label">Why flange-invariant?</div>
         <div class="why">
@@ -535,7 +550,7 @@ with left:
             sessions and devices.
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
 
 
 with right:
@@ -568,7 +583,7 @@ with right:
     result = st.session_state.get("last_result")
 
     if result is None:
-        st.markdown("""
+        _render_html("""
         <div class="glass" style="text-align:center; padding: 2.5rem 1.5rem;">
             <div style="font-size:1.05rem; font-weight:600; color:#f5f7fa;">No prediction yet</div>
             <div style="color:#9aa6b9; font-size:0.85rem; max-width:480px; margin: 0.5rem auto 0;">
@@ -576,7 +591,7 @@ with right:
                 The detected hits, calibrated probabilities, and final torque will appear here.
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     else:
         # -------- Warnings -------- #
         render_warnings(result.get("warnings", []) or [])
@@ -617,11 +632,11 @@ with right:
                 </div>
             </div>
             """
-            st.markdown(html, unsafe_allow_html=True)
+            _render_html(html)
 
         # -------- Waveform -------- #
         if result.get("waveform", {}).get("values"):
-            st.markdown(f"""
+            _render_html(f"""
             <div class="glass" style="margin-top:0.85rem;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
@@ -631,7 +646,7 @@ with right:
                     <span class="pill cyan">{result.get('n_hits', 0)} hit{'s' if result.get('n_hits', 0) != 1 else ''}</span>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """)
             fig = build_main_waveform_figure(result)
             try:
                 st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
@@ -641,23 +656,23 @@ with right:
         # -------- Per-hit gallery -------- #
         per_hit = result.get("per_hit") or []
         if per_hit:
-            st.markdown("""
+            _render_html("""
             <div class="glass" style="margin-top:0.85rem;">
                 <div class="label">Per-Hit Predictions</div>
                 <div class="label-sub">Each card shows one hammer strike and its calibrated probabilities.</div>
             </div>
-            """, unsafe_allow_html=True)
+            """)
             cards_html = '<div class="hit-grid">' + ''.join(render_hit_card(h) for h in per_hit) + '</div>'
-            st.markdown(cards_html, unsafe_allow_html=True)
+            _render_html(cards_html)
 
 
 # ---------------------------------------------------------------- #
 # Footer
 # ---------------------------------------------------------------- #
-st.markdown("""
+_render_html("""
 <div style="margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(155,166,185,0.12);
             text-align:center; color:#6b7892; font-size:0.75rem;">
     Built for the UH Machine Learning Competition 2026 · Model: Flange-Invariant LR with per-class isotonic calibration
     · Soft-vote across hits.
 </div>
-""", unsafe_allow_html=True)
+""")
