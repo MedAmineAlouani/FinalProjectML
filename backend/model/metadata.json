@@ -1,0 +1,35 @@
+{
+  "model": "Flange-Invariant Logistic Regression",
+  "classes": [
+    0,
+    25,
+    50
+  ],
+  "n_total_features": 150,
+  "n_selected_features": 100,
+  "flanges_seen_in_training": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "n_training_hits": 987,
+  "n_training_files": 48,
+  "lofo_raw_hit_accuracy": 0.8348530901722391,
+  "lofo_calibrated_hit_accuracy": 0.8419452887537994,
+  "in_sample_hit_accuracy": 1.0,
+  "feature_extraction": {
+    "n_mfcc": 13,
+    "n_fft": 512,
+    "hop_length": 128,
+    "n_psd_bins": 64
+  },
+  "segmentation": {
+    "ignore_start_sec": 0.15,
+    "envelope_win_sec": 0.01,
+    "min_peak_distance_sec": 0.3,
+    "peak_height_factor": 2.5,
+    "pre_hit_sec": 0.02,
+    "post_hit_sec": 0.15
+  }
+}
