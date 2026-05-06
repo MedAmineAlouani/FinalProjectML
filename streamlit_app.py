@@ -282,6 +282,47 @@ CSS = """
   .feat-tile .k { font-size: 0.72rem; font-weight: 700; color: #f5f7fa; }
   .feat-tile .n { font-size: 0.68rem; color: #67e8f9; font-family: ui-monospace, monospace; margin-left: 0.3rem; }
   .feat-tile .v { font-size: 0.72rem; color: #9aa6b9; margin-top: 0.25rem; line-height: 1.4; }
+
+  /* Author / course credit (below hero, on every tab) */
+  .credit-strip {
+    display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center;
+    margin-top: 0.95rem; padding: 0.55rem 0.85rem;
+    background: rgba(24, 29, 44, 0.55);
+    border: 1px solid rgba(155, 166, 185, 0.14);
+    border-radius: 0.6rem;
+    font-size: 0.75rem; color: #9aa6b9;
+    line-height: 1.4;
+  }
+  .credit-strip .credit-name {
+    font-weight: 700; color: #f5f7fa; letter-spacing: 0.01em;
+  }
+  .credit-strip .credit-course { color: #67e8f9; font-weight: 600; }
+  .credit-strip .credit-sep { color: rgba(155, 166, 185, 0.45); }
+
+  /* Larger about-tab credit block */
+  .credit-block {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+  @media (min-width: 700px) { .credit-block { grid-template-columns: 1.4fr 1fr; } }
+  .credit-block .author-name {
+    font-size: 1.4rem; font-weight: 800; color: #f5f7fa; letter-spacing: -0.01em;
+  }
+  .credit-block .author-role { color: #9aa6b9; font-size: 0.9rem; margin-top: 0.15rem; }
+  .credit-block .course-grad {
+    font-size: 1.05rem; font-weight: 700;
+    background: linear-gradient(90deg, #10b981 0%, #22d3ee 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .credit-block .meta-row {
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    color: #cbd3df; font-size: 0.85rem; margin-top: 0.5rem; line-height: 1.4;
+  }
+  .credit-block .meta-row .k {
+    color: #6b7892; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; min-width: 5.5rem;
+  }
 </style>
 """
 st.markdown(CSS, unsafe_allow_html=True)
@@ -482,6 +523,19 @@ _render_html("""
     <span style="color:#f59e0b;font-family:ui-monospace,monospace;">50 ft-lbs</span>
     &mdash; from its acoustic ring-down.
 </p>
+<div class="credit-strip">
+    <span class="credit-name">Mohamed Amine Alouani</span>
+    <span class="credit-sep">·</span>
+    <span>Graduate Student</span>
+    <span class="credit-sep">·</span>
+    <span class="credit-course">MECE 6373 — Machine Learning</span>
+    <span class="credit-sep">·</span>
+    <span>Spring 2026</span>
+    <span class="credit-sep">·</span>
+    <span>Department of Mechanical Engineering</span>
+    <span class="credit-sep">·</span>
+    <span>Instructor: Prof. G. Song</span>
+</div>
 <div class="pipe-strip">
     <span class="pipe-pill">Raw Audio</span>
     <span class="pipe-arrow">&rarr;</span>
@@ -926,6 +980,29 @@ with tab_features:
 with tab_about:
     md = (model.metadata if model is not None else {}) or {}
 
+    # Author / course credit
+    _render_html("""
+    <div class="glass">
+        <div class="credit-block">
+            <div>
+                <div class="label">Author</div>
+                <div class="author-name" style="margin-top:0.25rem;">Mohamed Amine Alouani</div>
+                <div class="author-role">Graduate Student · Department of Mechanical Engineering</div>
+                <div class="author-role" style="margin-top:0.55rem;">University of Houston</div>
+            </div>
+            <div>
+                <div class="label">Course</div>
+                <div class="course-grad" style="margin-top:0.25rem;">MECE 6373 — Machine Learning</div>
+                <div class="meta-row"><span class="k">Term</span><span>Spring 2026</span></div>
+                <div class="meta-row"><span class="k">Instructor</span><span>Professor G. Song</span></div>
+                <div class="meta-row"><span class="k">Project</span><span>UH ML Competition 2026 — Bolted-Flange Looseness Detection</span></div>
+            </div>
+        </div>
+    </div>
+    """)
+
+    st.write("")
+
     # Method statement
     _render_html("""
     <div class="glass">
@@ -1164,7 +1241,9 @@ with tab_about:
 # ---------------------------------------------------------------- #
 _render_html("""
 <div style="margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(155,166,185,0.12);
-            text-align:center; color:#6b7892; font-size:0.75rem;">
-    Built for the UH Machine Learning Competition 2026 · Model: Flange-Invariant LR with per-class isotonic calibration · Soft-vote across hits.
+            text-align:center; color:#6b7892; font-size:0.75rem; line-height:1.55;">
+    Built for the UH Machine Learning Competition 2026 · Flange-Invariant LR with per-class isotonic calibration · Soft-vote across hits.
+    <br/>
+    <span style="color:#9aa6b9;">Mohamed Amine Alouani</span> · MECE 6373 · Spring 2026 · Department of Mechanical Engineering · Instructor: Prof. G. Song
 </div>
 """)
