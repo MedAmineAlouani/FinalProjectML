@@ -984,23 +984,40 @@ with tab_about:
     </div>
     """)
 
+    # Pedagogical assembly diagram (kept from poster) + the user's lab photos
     p_assembly = ASSETS_DIR / "pipeline_assembly.png"
-    p_flange   = ASSETS_DIR / "flange_areas.png"
-    p_lab      = ASSETS_DIR / "lab_setup.jpg"
+    p_flanges  = ROOT / "flanges.png"
+    p_close    = ROOT / "IMG_1976.jpg"
+    p_lab      = ROOT / "IMG_1979.jpg"
+    p_torque   = ROOT / "IMG_1984.jpg"
 
-    col_a, col_b, col_c = st.columns([1, 1, 1.4])
+    # Top row: the three "what" photos
+    col_a, col_b, col_c = st.columns([1, 1, 1.2])
     with col_a:
         if p_assembly.exists():
             _stretch_image(str(p_assembly),
-                           "The four flanges along the pipeline (F1 nearest, F4 farthest).")
+                           "Four flanges along the pipeline (F1 nearest, F4 farthest).")
     with col_b:
-        if p_flange.exists():
-            _stretch_image(str(p_flange),
-                           "One flange showing the 4 hammer-strike areas.")
+        if p_flanges.exists():
+            _stretch_image(str(p_flanges),
+                           "One flange labelled with the 4 hammer-strike areas.")
     with col_c:
+        if p_close.exists():
+            _stretch_image(str(p_close),
+                           "Close-up of flange F4 — three bolts secure each flange.")
+
+    # Bottom row: the two "how" photos
+    col_d, col_e = st.columns([1.4, 1])
+    with col_d:
         if p_lab.exists():
             _stretch_image(str(p_lab),
-                           "Lab setup: instrumented pipeline mounted on stands.")
+                           "Lab setup: the steel pipeline mounted on stands, "
+                           "instrumented for percussion measurements.")
+    with col_e:
+        if p_torque.exists():
+            _stretch_image(str(p_torque),
+                           "Setting bolt preload with a torque wrench before each session "
+                           "(0, 25, or 50 ft-lbs).")
 
     # ---- Confusion matrices
     if md.get("confusion_matrices"):
